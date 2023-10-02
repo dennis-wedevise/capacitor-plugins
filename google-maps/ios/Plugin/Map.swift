@@ -212,6 +212,24 @@ public class Map {
         }
     }
 
+    func addTileOverlay(tile: Tile) {
+        let floor = 1
+
+        // Implement GMSTileURLConstructor
+        // Returns a Tile based on the x,y,zoom coordinates, and the requested floor
+        let urls: GMSTileURLConstructor = { (x, y, zoom) in
+            let url = "https://ibirdies.com/clients/ibirdies/themes/golfcourses/woestekop/1/hole1/\(floor)_\(zoom)_\(x)_\(y).png"
+            return URL(string: url)
+        }
+
+        // Create the GMSTileLayer
+        let layer = GMSURLTileLayer(urlConstructor: urls)
+
+        // Display on the map at a specific zIndex
+        layer.zIndex = 100
+        layer.map = mapView
+    }
+
     func addMarker(marker: Marker) throws -> Int {
         var markerHash = 0
 

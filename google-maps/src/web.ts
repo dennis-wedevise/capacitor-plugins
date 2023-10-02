@@ -11,6 +11,7 @@ import {
 import type { Marker } from './definitions';
 import { MapType, LatLngBounds } from './definitions';
 import type {
+  AddTileOverlayArgs,
   AddMarkerArgs,
   CameraArgs,
   AddMarkersArgs,
@@ -35,10 +36,42 @@ import type {
   RemovePolylinesArgs,
 } from './implementation';
 
+
+class CoordMapType implements google.maps.MapType {
+  tileSize: google.maps.Size;
+  alt: string | null = null;
+  maxZoom: number = 17;
+  minZoom: number = 0;
+  name: string | null = null;
+  projection: google.maps.Projection | null = null;
+  radius: number = 6378137;
+
+  constructor(tileSize: google.maps.Size) {
+    this.tileSize = tileSize;
+  }
+  getTile(
+    coord: google.maps.Point,
+    zoom: number,
+    ownerDocument: Document
+  ): HTMLElement {
+    const div = ownerDocument.createElement("div");
+    div.setAttribute('data-zoom', '' + zoom);
+    div.innerHTML = String(coord);
+    div.className = "";
+    div.style.width = this.tileSize.width + "px";
+    div.style.height = this.tileSize.height + "px";
+    div.style.fontSize = "10";
+    div.style.borderStyle = "solid";
+    div.style.borderWidth = "0.01px";
+    div.style.borderColor = "#000000";
+    return div;
+  }
+  releaseTile(): void { }
+}
+
 export class CapacitorGoogleMapsWeb
   extends WebPlugin
-  implements CapacitorGoogleMapsPlugin
-{
+  implements CapacitorGoogleMapsPlugin {
   private gMapsRef: typeof google.maps | undefined = undefined;
   private maps: {
     [id: string]: {
@@ -258,6 +291,88 @@ export class CapacitorGoogleMapsWeb
     const map = this.maps[_args.id].map;
     const bounds = this.getLatLngBounds(_args.bounds);
     map.fitBounds(bounds, _args.padding);
+  }
+
+  async addTileOverlay(_args: AddTileOverlayArgs): Promise<any> {
+    const map = this.maps[_args.id].map;
+
+    // defined CustomImageMapType Class
+    class CustomImageMapType extends google.maps.ImageMapType {
+      fadeIn: boolean = true;
+      zIndex: number = 0.0;
+      opacity: number = 1.0;
+      visible: boolean = true;
+      debug: boolean = false;
+
+      constructor(args: any) {
+        super({
+          getTileUrl: (coord, zoom) => args.getTileUrl(coord.x, coord.y, zoom),
+          tileSize: new google.maps.Size(256, 256),
+          minZoom: 15,
+          maxZoom: 20,
+          name: 'TileOverlay',
+          opacity: args.opacity,
+        });
+
+        this.fadeIn = args.fadeIn || false;
+        this.zIndex = args.zIndex || 0.0;
+        this.visible = args.visible;
+        this.debug = args.debug || false;
+        this.opacity = args.opacity || 1.0;
+      }
+
+      setFadeIn(fadeIn: boolean) {
+        this.fadeIn = fadeIn;
+      }
+
+      getFadeIn(): boolean {
+        return this.fadeIn;
+      }
+
+      setZIndex(zIndex: number) {
+        this.zIndex = zIndex;
+      }
+
+      getZIndex(): number {
+        return this.zIndex;
+      }
+
+      setOpacity(opacity: number) {
+        this.opacity = opacity;
+      }
+
+      getOpacity(): number {
+        return this.opacity;
+      }
+
+      setVisible(visible: boolean) {
+        this.visible = visible;
+
+        this.opacity = this.visible ? 1.0 : 0.0;
+      }
+
+      getVisible(): boolean {
+        return this.visible;
+      }
+    }
+
+    const tileProvider: CustomImageMapType = new CustomImageMapType({
+      getTileUrl: (x: number, y: number, z: number) => _args.getTile(x, y, z),
+      tileSize: new google.maps.Size(256, 256),
+      minZoom: 15, // Minimum supported zoom level
+      maxZoom: 20, // Maximum supported zoom level
+      name: 'TileOverlay', // Name for the custom map type
+      opacity: 1.0,
+    });
+
+    map.overlayMapTypes.insertAt(0, tileProvider);
+
+    const tileSize = new google.maps.Size(256, 256); // Create a google.maps.Size instance
+    const coordMapType = new CoordMapType(tileSize);
+    // Draw Tiles
+    map.overlayMapTypes.insertAt(0, coordMapType);
+
+    return tileProvider;
   }
 
   async addMarkers(_args: AddMarkersArgs): Promise<{ ids: string[] }> {

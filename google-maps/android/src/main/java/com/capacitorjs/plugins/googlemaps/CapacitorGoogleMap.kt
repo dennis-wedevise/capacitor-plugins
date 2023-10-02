@@ -19,6 +19,8 @@ import com.google.maps.android.clustering.ClusterManager
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import java.io.InputStream
+import java.net.HttpURLConnection
+import java.net.MalformedURLException
 import java.net.URL
 
 
@@ -170,6 +172,54 @@ class CapacitorGoogleMap(
                     }
 
             job.join()
+        }
+    }
+
+    fun addTileOverlay(tileOverlay: CapacitorGoogleMapsTileOverlay, callback: (result: Result<String>) -> Unit) {
+        try {
+            googleMap ?: throw GoogleMapNotAvailable()
+            var tileOverlayId: String
+
+            CoroutineScope(Dispatchers.Main).launch {
+
+                var tileProvider: TileProvider = object : UrlTileProvider(256, 256) {
+                    override fun getTileUrl(x: Int, y: Int, zoom: Int): URL? {
+
+                        /* Define the URL pattern for the tile images */
+                        val url = "https://ibirdies.com/clients/ibirdies/themes/golfcourses/woestekop/1/hole1/" + zoom + "/" + x + "/" + y + ".png"
+                        return if (!checkTileExists(x, y, zoom)) {
+                            null
+                        } else try {
+                            URL(url)
+                        } catch (e: MalformedURLException) {
+                            throw AssertionError(e)
+                        }
+                    }
+
+                    /*
+                     * Check that the tile server supports the requested x, y and zoom.
+                     * Complete this stub according to the tile range you support.
+                     * If you support a limited range of tiles at different zoom levels, then you
+                     * need to define the supported x, y range at each zoom level.
+                     */
+                    private fun checkTileExists(x: Int, y: Int, zoom: Int): Boolean {
+                        val minZoom = 15
+                        val maxZoom = 20
+                        return zoom in minZoom..maxZoom
+                    }
+                }
+
+                val tileOverlayValue = googleMap?.addTileOverlay(
+                    TileOverlayOptions()
+                        .tileProvider(tileProvider)
+                )
+
+                tileOverlay.googleMapsTileOverlay = tileOverlayValue
+                tileOverlayId = tileOverlayValue!!.id
+                callback(Result.success(tileOverlayId))
+            }
+        } catch (e: GoogleMapsError) {
+            callback(Result.failure(e))
         }
     }
 

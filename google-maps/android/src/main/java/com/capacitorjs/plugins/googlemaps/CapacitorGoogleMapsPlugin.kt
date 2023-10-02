@@ -202,6 +202,42 @@ class CapacitorGoogleMapsPlugin : Plugin() {
     }
 
     @PluginMethod
+    fun addTileOverlay(call: PluginCall) {
+        try {
+            val id = call.getString("id")
+            id ?: throw InvalidMapIdError()
+
+
+            Log.d("All Datas: ", call.data.toString())
+            val opacity = call.getFloat("opacity", 1.0f)
+            val zIndex = call.getFloat("zIndex", 0.0f)
+            val visible = call.getBoolean("visible", true)
+
+            val tileOverlayConfig = JSONObject()
+            tileOverlayConfig.put("opacity", opacity)
+            tileOverlayConfig.put("zIndex", zIndex)
+            tileOverlayConfig.put("visible", visible)
+
+            val map = maps[id]
+            map ?: throw MapNotFoundError()
+
+            val tileOptions = CapacitorGoogleMapsTileOverlay(tileOverlayConfig)
+
+            map.addTileOverlay(tileOptions) { result ->
+                val tileOverlayId = result.getOrThrow()
+
+                val res = JSObject()
+                res.put("id", tileOverlayId)
+                call.resolve(res)
+            }
+        } catch (e: GoogleMapsError) {
+            handleError(call, e)
+        } catch (e: Exception) {
+            handleError(call, e)
+        }
+    }
+
+    @PluginMethod
     fun addMarker(call: PluginCall) {
         try {
             val id = call.getString("id")

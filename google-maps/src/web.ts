@@ -371,6 +371,7 @@ export class CapacitorGoogleMapsWeb
     const coordMapType = new CoordMapType(tileSize);
     // Draw Tiles
     map.overlayMapTypes.insertAt(0, coordMapType);
+    console.log('overlayMapTypes');
 
     return tileProvider;
   }

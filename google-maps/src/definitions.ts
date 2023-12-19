@@ -70,11 +70,11 @@ export interface Point {
  * For iOS and Android only the config options declared on TileOverlay are available.
  */
 export interface TileOverlay {
-  getTile: (x: number, y: number, z: number) => string;
+  getTile: (x: number, y: number, zoom: number) => string;
   opacity?: number;
-  debug?: boolean;
   visible?: boolean;
   zIndex?: number;
+  debug?: boolean;
 }
 
 /**
@@ -203,36 +203,6 @@ export interface GoogleMapConfig extends google.maps.MapOptions {
    * @since 4.3.0
    */
   styles?: google.maps.MapTypeStyle[] | null;
-  /**
-   * A map id associated with a specific map style or feature.
-   *
-   * [Use Map IDs](https://developers.google.com/maps/documentation/get-map-id)
-   *
-   * Only for Web.
-   *
-   * @since 5.4.0
-   */
-  mapId?: string;
-  /**
-   * A map id associated with a specific map style or feature.
-   *
-   * [Use Map IDs](https://developers.google.com/maps/documentation/get-map-id)
-   *
-   * Only for Android.
-   *
-   * @since 5.4.0
-   */
-  androidMapId?: string;
-  /**
-   * A map id associated with a specific map style or feature.
-   *
-   * [Use Map IDs](https://developers.google.com/maps/documentation/get-map-id)
-   *
-   * Only for iOS.
-   *
-   * @since 5.4.0
-   */
-  iOSMapId?: string;
 }
 
 /**

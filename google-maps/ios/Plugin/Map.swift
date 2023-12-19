@@ -13,7 +13,6 @@ class GMViewController: UIViewController {
     var GMapView: GMSMapView!
     var cameraPosition: [String: Double]!
     var minimumClusterSize: Int?
-    var mapId: String?
 
     private var clusterManager: GMUClusterManager?
 
@@ -26,13 +25,7 @@ class GMViewController: UIViewController {
 
         let camera = GMSCameraPosition.camera(withLatitude: cameraPosition["latitude"] ?? 0, longitude: cameraPosition["longitude"] ?? 0, zoom: Float(cameraPosition["zoom"] ?? 12))
         let frame = CGRect(x: mapViewBounds["x"] ?? 0, y: mapViewBounds["y"] ?? 0, width: mapViewBounds["width"] ?? 0, height: mapViewBounds["height"] ?? 0)
-        if let id = mapId {
-            let gmsId = GMSMapID(identifier: id)
-            self.GMapView = GMSMapView(frame: frame, mapID: gmsId, camera: camera)
-        } else {
-            self.GMapView = GMSMapView(frame: frame, camera: camera)
-        }
-
+        self.GMapView = GMSMapView.map(withFrame: frame, camera: camera)
         self.view = GMapView
     }
 
@@ -92,7 +85,6 @@ public class Map {
         self.config = config
         self.delegate = delegate
         self.mapViewController = GMViewController()
-        self.mapViewController.mapId = config.mapId
 
         self.render()
     }
@@ -197,7 +189,7 @@ public class Map {
 
     func destroy() {
         DispatchQueue.main.async {
-            self.mapViewController.GMapView = nil
+            self.mapViewController.GMapView = nil            
             self.targetViewController?.tag = 0
             self.mapViewController.view = nil
             self.enableTouch()
@@ -218,24 +210,6 @@ public class Map {
                 WKWebView.disabledTargets.append(target)
             }
         }
-    }
-
-    func addTileOverlay(tile: Tile) {
-        let floor = 1
-
-        // Implement GMSTileURLConstructor
-        // Returns a Tile based on the x,y,zoom coordinates, and the requested floor
-        let urls: GMSTileURLConstructor = { (x, y, zoom) in
-            let url = "https://ibirdies.com/clients/ibirdies/themes/golfcourses/woestekop/1/hole1/\(floor)_\(zoom)_\(x)_\(y).png"
-            return URL(string: url)
-        }
-
-        // Create the GMSTileLayer
-        let layer = GMSURLTileLayer(urlConstructor: urls)
-
-        // Display on the map at a specific zIndex
-        layer.zIndex = 100
-        layer.map = mapView
     }
 
     func addMarker(marker: Marker) throws -> Int {
@@ -640,15 +614,11 @@ public class Map {
                 newMarker.icon = getResizedIcon(iconImage, marker)
             } else {
                 if iconUrl.starts(with: "https:") {
-                    if let url = URL(string: iconUrl) {
-                        URLSession.shared.dataTask(with: url) { (data, _, _) in
-                            DispatchQueue.main.async {
-                                if let data = data, let iconImage = UIImage(data: data) {
-                                    self.markerIcons[iconUrl] = iconImage
-                                    newMarker.icon = getResizedIcon(iconImage, marker)
-                                }
-                            }
-                        }.resume()
+                    DispatchQueue.main.async {
+                        if let url = URL(string: iconUrl), let data = try? Data(contentsOf: url), let iconImage = UIImage(data: data) {
+                            self.markerIcons[iconUrl] = iconImage
+                            newMarker.icon = getResizedIcon(iconImage, marker)
+                        }
                     }
                 } else if let iconImage = UIImage(named: "public/\(iconUrl)") {
                     self.markerIcons[iconUrl] = iconImage

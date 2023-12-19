@@ -11,7 +11,6 @@ import com.getcapacitor.annotation.CapacitorPlugin
 import com.getcapacitor.annotation.Permission
 import com.getcapacitor.annotation.PermissionCallback
 import com.google.android.gms.maps.MapsInitializer
-import com.google.android.gms.maps.OnMapsSdkInitializedCallback
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import kotlinx.coroutines.CoroutineScope
@@ -30,7 +29,7 @@ import org.json.JSONObject
                         ),
                 ],
 )
-class CapacitorGoogleMapsPlugin : Plugin(), OnMapsSdkInitializedCallback {
+class CapacitorGoogleMapsPlugin : Plugin() {
     private var maps: HashMap<String, CapacitorGoogleMap> = HashMap()
     private var cachedTouchEvents: HashMap<String, MutableList<MotionEvent>> = HashMap()
     private val tag: String = "CAP-GOOGLE-MAPS"
@@ -44,8 +43,7 @@ class CapacitorGoogleMapsPlugin : Plugin(), OnMapsSdkInitializedCallback {
     override fun load() {
         super.load()
 
-        MapsInitializer.initialize(this.context, MapsInitializer.Renderer.LATEST, this)
-
+        MapsInitializer.initialize(this.context, MapsInitializer.Renderer.LATEST, null)
 
         this.bridge.webView.setOnTouchListener(
                 object : View.OnTouchListener {
@@ -90,13 +88,6 @@ class CapacitorGoogleMapsPlugin : Plugin(), OnMapsSdkInitializedCallback {
                     }
                 }
         )
-    }
-
-    override fun onMapsSdkInitialized(renderer: MapsInitializer.Renderer) {
-        when (renderer) {
-            MapsInitializer.Renderer.LATEST -> Logger.debug("Capacitor Google Maps", "Latest Google Maps renderer enabled")
-            MapsInitializer.Renderer.LEGACY -> Logger.debug("Capacitor Google Maps", "Legacy Google Maps renderer enabled - Cloud based map styling and advanced drawing not available")
-        }
     }
 
     override fun handleOnStart() {
@@ -216,13 +207,16 @@ class CapacitorGoogleMapsPlugin : Plugin(), OnMapsSdkInitializedCallback {
             val id = call.getString("id")
             id ?: throw InvalidMapIdError()
 
+            val imageBoundsObj = call.getObject("imageBounds") ?: throw InvalidArgumentsError("imageBounds object is missing")
 
-            Log.d("All Datas: ", call.data.toString())
+            val imageSrc = call.getString("imageSrc")
             val opacity = call.getFloat("opacity", 1.0f)
             val zIndex = call.getFloat("zIndex", 0.0f)
             val visible = call.getBoolean("visible", true)
 
             val tileOverlayConfig = JSONObject()
+            tileOverlayConfig.put("imageBounds", imageBoundsObj)
+            tileOverlayConfig.put("imageSrc", imageSrc)
             tileOverlayConfig.put("opacity", opacity)
             tileOverlayConfig.put("zIndex", zIndex)
             tileOverlayConfig.put("visible", visible)

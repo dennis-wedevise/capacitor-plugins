@@ -20,7 +20,6 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import java.io.InputStream
 import java.net.HttpURLConnection
-import java.net.MalformedURLException
 import java.net.URL
 
 
@@ -180,13 +179,25 @@ class CapacitorGoogleMap(
             googleMap ?: throw GoogleMapNotAvailable()
             var tileOverlayId: String
 
-            CoroutineScope(Dispatchers.Main).launch {
+            val bitmapFunc = CoroutineScope(Dispatchers.IO).async {
+                val url = URL(tileOverlay.imageSrc)
+                val connection: HttpURLConnection = url.openConnection() as HttpURLConnection
 
+                connection.doInput = true
+                connection.connect()
+
+                val input: InputStream = connection.inputStream
+
+                BitmapFactory.decodeStream(input)
+            }
+
+            CoroutineScope(Dispatchers.Main).launch {
+                /*
                 var tileProvider: TileProvider = object : UrlTileProvider(256, 256) {
                     override fun getTileUrl(x: Int, y: Int, zoom: Int): URL? {
 
                         /* Define the URL pattern for the tile images */
-                        val url = "https://ibirdies.com/clients/ibirdies/themes/golfcourses/woestekop/1/hole1/" + zoom + "/" + x + "/" + y + ".png"
+                        val url = "https://avatars.githubusercontent.com/u/103097039?v=4"
                         return if (!checkTileExists(x, y, zoom)) {
                             null
                         } else try {
@@ -203,20 +214,40 @@ class CapacitorGoogleMap(
                      * need to define the supported x, y range at each zoom level.
                      */
                     private fun checkTileExists(x: Int, y: Int, zoom: Int): Boolean {
-                        val minZoom = 15
-                        val maxZoom = 20
+                        val minZoom = 1
+                        val maxZoom = 16
                         return zoom in minZoom..maxZoom
                     }
                 }
 
-                val tileOverlayValue = googleMap?.addTileOverlay(
+                Log.d("TileOverlay ^^^ ", "tileProvider")
+
+                val tileOverlay = googleMap?.addTileOverlay(
                     TileOverlayOptions()
                         .tileProvider(tileProvider)
                 )
+                */
 
-                tileOverlay.googleMapsTileOverlay = tileOverlayValue
-                tileOverlayId = tileOverlayValue!!.id
-                callback(Result.success(tileOverlayId))
+                val bitmap = bitmapFunc.await()
+
+                // Now you can safely use the bitmap
+                if (bitmap != null) {
+                    val imageDescriptor = BitmapDescriptorFactory.fromBitmap(bitmap)
+
+                    val groundOverlay = googleMap?.addGroundOverlay(
+                        GroundOverlayOptions()
+                            .image(imageDescriptor)
+                            .positionFromBounds(tileOverlay.imageBounds)
+                            .transparency(tileOverlay.opacity)
+                            .zIndex(tileOverlay.zIndex)
+                            .visible(tileOverlay.visible)
+                    )
+
+                    tileOverlay.googleMapsTileOverlay = groundOverlay
+                    tileOverlayId = groundOverlay!!.id
+
+                    callback(Result.success(tileOverlayId))
+                }
             }
         } catch (e: GoogleMapsError) {
             callback(Result.failure(e))
@@ -822,10 +853,6 @@ class CapacitorGoogleMap(
         markerOptions.flat(marker.isFlat)
         markerOptions.draggable(marker.draggable)
         markerOptions.zIndex(marker.zIndex)
-        if (marker.iconAnchor != null) {
-            markerOptions.anchor(marker.iconAnchor!!.x, marker.iconAnchor!!.y)
-        }
-
 
         if (!marker.iconUrl.isNullOrEmpty()) {
             if (this.markerIcons.contains(marker.iconUrl)) {

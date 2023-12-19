@@ -55,15 +55,18 @@ class CoordMapType implements google.maps.MapType {
     ownerDocument: Document
   ): HTMLElement {
     const div = ownerDocument.createElement("div");
-    div.setAttribute('data-zoom', '' + zoom);
-    div.innerHTML = String(coord);
-    div.className = "";
+    const pElement = ownerDocument.createElement("p");
+    pElement.innerHTML = `x = ${coord.x}, y = ${coord.y}, zoom = ${zoom}`;
+    pElement.style.color = "rgba(0, 0, 0, 0.5)";
+    pElement.style.padding = "0 20px";
+    div.appendChild(pElement);
+
     div.style.width = this.tileSize.width + "px";
     div.style.height = this.tileSize.height + "px";
     div.style.fontSize = "10";
     div.style.borderStyle = "solid";
-    div.style.borderWidth = "0.01px";
-    div.style.borderColor = "#000000";
+    div.style.borderWidth = "1px";
+    div.style.borderColor = "rgba(0, 0, 0, 0.5)";
     return div;
   }
   releaseTile(): void { }
@@ -296,84 +299,42 @@ export class CapacitorGoogleMapsWeb
   async addTileOverlay(_args: AddTileOverlayArgs): Promise<any> {
     const map = this.maps[_args.id].map;
 
-    // defined CustomImageMapType Class
-    class CustomImageMapType extends google.maps.ImageMapType {
-      fadeIn: boolean = true;
-      zIndex: number = 0.0;
-      opacity: number = 1.0;
-      visible: boolean = true;
-      debug: boolean = false;
-
-      constructor(args: any) {
-        super({
-          getTileUrl: (coord, zoom) => args.getTileUrl(coord.x, coord.y, zoom),
-          tileSize: new google.maps.Size(256, 256),
-          minZoom: 15,
-          maxZoom: 20,
-          name: 'TileOverlay',
-          opacity: args.opacity,
-        });
-
-        this.fadeIn = args.fadeIn || false;
-        this.zIndex = args.zIndex || 0.0;
-        this.visible = args.visible;
-        this.debug = args.debug || false;
-        this.opacity = args.opacity || 1.0;
-      }
-
-      setFadeIn(fadeIn: boolean) {
-        this.fadeIn = fadeIn;
-      }
-
-      getFadeIn(): boolean {
-        return this.fadeIn;
-      }
-
-      setZIndex(zIndex: number) {
-        this.zIndex = zIndex;
-      }
-
-      getZIndex(): number {
-        return this.zIndex;
-      }
-
-      setOpacity(opacity: number) {
-        this.opacity = opacity;
-      }
-
-      getOpacity(): number {
-        return this.opacity;
-      }
-
-      setVisible(visible: boolean) {
-        this.visible = visible;
-
-        this.opacity = this.visible ? 1.0 : 0.0;
-      }
-
-      getVisible(): boolean {
-        return this.visible;
-      }
-    }
-
-    const tileProvider: CustomImageMapType = new CustomImageMapType({
-      getTileUrl: (x: number, y: number, z: number) => _args.getTile(x, y, z),
-      tileSize: new google.maps.Size(256, 256),
-      minZoom: 15, // Minimum supported zoom level
-      maxZoom: 20, // Maximum supported zoom level
-      name: 'TileOverlay', // Name for the custom map type
-      opacity: 1.0,
-    });
-
-    map.overlayMapTypes.insertAt(0, tileProvider);
-
     const tileSize = new google.maps.Size(256, 256); // Create a google.maps.Size instance
     const coordMapType = new CoordMapType(tileSize);
-    // Draw Tiles
-    map.overlayMapTypes.insertAt(0, coordMapType);
-    console.log('overlayMapTypes');
 
-    return tileProvider;
+    // Create a TileOverlay object
+    var customMapOverlay = new google.maps.ImageMapType({
+        getTileUrl: function(coord, zoom) {
+            return _args.getTile(coord.x, coord.y, zoom);
+        },
+        tileSize: new google.maps.Size(256, 256),
+        opacity: _args?.opacity,
+        name: 'tileoverlay',
+    });
+
+    // Draw Tiles
+    map.overlayMapTypes.insertAt(0, coordMapType); // insert coordMapType at the first position
+
+    // Add the TileOverlay to the map
+    map.overlayMapTypes.push(customMapOverlay);
+
+    // Optionally, you can set debug mode if needed
+    if (_args?.debug) {
+        map.addListener('mousemove', function(event: any) {
+            console.log('Mouse Coordinates: ', event.latLng.toString());
+        });
+    }
+
+    // Set visibility based on the 'visible' property
+    if (!_args?.visible) {
+        map.overlayMapTypes.pop(); // Remove the last overlay (customMapOverlay) from the stack
+    }
+
+    // Set zIndex based on the 'zIndex' property
+    if (_args?.zIndex !== undefined) {
+      // Move the customMapOverlay to the specified index in the overlay stack
+      map.overlayMapTypes.setAt(map.overlayMapTypes.getLength() - 1, customMapOverlay);
+    }
   }
 
   async addMarkers(_args: AddMarkersArgs): Promise<{ ids: string[] }> {
@@ -552,7 +513,6 @@ export class CapacitorGoogleMapsWeb
   async create(_args: CreateMapArgs): Promise<void> {
     console.log(`Create map: ${_args.id}`);
     await this.importGoogleLib(_args.apiKey, _args.region, _args.language);
-
     this.maps[_args.id] = {
       map: new window.google.maps.Map(_args.element, { ..._args.config }),
       element: _args.element,

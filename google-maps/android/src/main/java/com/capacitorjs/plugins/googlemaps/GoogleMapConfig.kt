@@ -16,7 +16,6 @@ class GoogleMapConfig(fromJSONObject: JSONObject) {
     var liteMode: Boolean = false
     var devicePixelRatio: Float = 1.00f
     var styles: String? = null
-    var mapId: String? = null
 
     init {
         if (!fromJSONObject.has("width")) {
@@ -82,14 +81,8 @@ class GoogleMapConfig(fromJSONObject: JSONObject) {
         center = LatLng(lat, lng)
 
         val cameraPosition = CameraPosition(center, zoom.toFloat(), 0.0F, 0.0F)
+        googleMapOptions = GoogleMapOptions().camera(cameraPosition).liteMode(liteMode)
 
         styles = fromJSONObject.getString("styles")
-
-        mapId = fromJSONObject.getString("androidMapId")
-
-        googleMapOptions = GoogleMapOptions().camera(cameraPosition).liteMode(liteMode)
-        if (mapId != null) {
-            googleMapOptions?.mapId(mapId!!)
-        }
     }
 }

@@ -12,7 +12,7 @@ class CapacitorGoogleMapsPoint() {
         }
 
         if(fromJSONObject.has("y")) {
-            this.y = fromJSONObject.getDouble("y").toFloat()
+            this.x = fromJSONObject.getDouble("y").toFloat()
         }
     }
 

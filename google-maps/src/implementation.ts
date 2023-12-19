@@ -60,7 +60,7 @@ export interface DestroyMapArgs {
 
 export interface AddTileOverlayArgs {
   id: string;
-  getTile: (x: number, y: number, z: number) => string;
+  getTile: (x: number, y: number, zoom: number) => string;
   opacity?: number;
   debug?: boolean;
   visible?: boolean;

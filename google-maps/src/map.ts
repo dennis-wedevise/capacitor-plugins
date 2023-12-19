@@ -379,7 +379,7 @@ export class GoogleMap {
   async addTileOverlay(tiles: TileOverlay): Promise<any> {
     return await CapacitorGoogleMaps.addTileOverlay({
       id: this.id,
-      ...tiles
+      ...tiles,
     });
   }
 

@@ -36,15 +36,14 @@ import type {
   RemovePolylinesArgs,
 } from './implementation';
 
-
 class CoordMapType implements google.maps.MapType {
   tileSize: google.maps.Size;
   alt: string | null = null;
-  maxZoom: number = 17;
-  minZoom: number = 0;
+  maxZoom = 17;
+  minZoom = 0;
   name: string | null = null;
   projection: google.maps.Projection | null = null;
-  radius: number = 6378137;
+  radius = 6378137;
 
   constructor(tileSize: google.maps.Size) {
     this.tileSize = tileSize;
@@ -52,29 +51,31 @@ class CoordMapType implements google.maps.MapType {
   getTile(
     coord: google.maps.Point,
     zoom: number,
-    ownerDocument: Document
+    ownerDocument: Document,
   ): HTMLElement {
-    const div = ownerDocument.createElement("div");
-    const pElement = ownerDocument.createElement("p");
+    const div = ownerDocument.createElement('div');
+    const pElement = ownerDocument.createElement('p');
     pElement.innerHTML = `x = ${coord.x}, y = ${coord.y}, zoom = ${zoom}`;
-    pElement.style.color = "rgba(0, 0, 0, 0.5)";
-    pElement.style.padding = "0 20px";
+    pElement.style.color = 'rgba(0, 0, 0, 0.5)';
+    pElement.style.padding = '0 20px';
     div.appendChild(pElement);
 
-    div.style.width = this.tileSize.width + "px";
-    div.style.height = this.tileSize.height + "px";
-    div.style.fontSize = "10";
-    div.style.borderStyle = "solid";
-    div.style.borderWidth = "1px";
-    div.style.borderColor = "rgba(0, 0, 0, 0.5)";
+    div.style.width = this.tileSize.width + 'px';
+    div.style.height = this.tileSize.height + 'px';
+    div.style.fontSize = '10';
+    div.style.borderStyle = 'solid';
+    div.style.borderWidth = '1px';
+    div.style.borderColor = 'rgba(0, 0, 0, 0.5)';
     return div;
   }
-  releaseTile(): void { }
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  releaseTile(): void {}
 }
 
 export class CapacitorGoogleMapsWeb
   extends WebPlugin
-  implements CapacitorGoogleMapsPlugin {
+  implements CapacitorGoogleMapsPlugin
+{
   private gMapsRef: typeof google.maps | undefined = undefined;
   private maps: {
     [id: string]: {
@@ -168,7 +169,6 @@ export class CapacitorGoogleMapsWeb
       });
       const google = await loader.load();
       this.gMapsRef = google.maps;
-      console.log('Loaded google maps API');
     }
   }
 
@@ -303,13 +303,13 @@ export class CapacitorGoogleMapsWeb
     const coordMapType = new CoordMapType(tileSize);
 
     // Create a TileOverlay object
-    var customMapOverlay = new google.maps.ImageMapType({
-        getTileUrl: function(coord, zoom) {
-            return _args.getTile(coord.x, coord.y, zoom);
-        },
-        tileSize: new google.maps.Size(256, 256),
-        opacity: _args?.opacity,
-        name: 'tileoverlay',
+    const customMapOverlay = new google.maps.ImageMapType({
+      getTileUrl: function (coord, zoom) {
+        return _args.getTile(coord.x, coord.y, zoom);
+      },
+      tileSize: new google.maps.Size(256, 256),
+      opacity: _args?.opacity,
+      name: 'tileoverlay',
     });
 
     // Draw Tiles
@@ -320,20 +320,23 @@ export class CapacitorGoogleMapsWeb
 
     // Optionally, you can set debug mode if needed
     if (_args?.debug) {
-        map.addListener('mousemove', function(event: any) {
-            console.log('Mouse Coordinates: ', event.latLng.toString());
-        });
+      map.addListener('mousemove', function (event: any) {
+        console.log('Mouse Coordinates: ', event.latLng.toString());
+      });
     }
 
     // Set visibility based on the 'visible' property
     if (!_args?.visible) {
-        map.overlayMapTypes.pop(); // Remove the last overlay (customMapOverlay) from the stack
+      map.overlayMapTypes.pop(); // Remove the last overlay (customMapOverlay) from the stack
     }
 
     // Set zIndex based on the 'zIndex' property
     if (_args?.zIndex !== undefined) {
       // Move the customMapOverlay to the specified index in the overlay stack
-      map.overlayMapTypes.setAt(map.overlayMapTypes.getLength() - 1, customMapOverlay);
+      map.overlayMapTypes.setAt(
+        map.overlayMapTypes.getLength() - 1,
+        customMapOverlay,
+      );
     }
   }
 
@@ -511,7 +514,6 @@ export class CapacitorGoogleMapsWeb
   }
 
   async create(_args: CreateMapArgs): Promise<void> {
-    console.log(`Create map: ${_args.id}`);
     await this.importGoogleLib(_args.apiKey, _args.region, _args.language);
     this.maps[_args.id] = {
       map: new window.google.maps.Map(_args.element, { ..._args.config }),
@@ -525,7 +527,6 @@ export class CapacitorGoogleMapsWeb
   }
 
   async destroy(_args: DestroyMapArgs): Promise<void> {
-    console.log(`Destroy map: ${_args.id}`);
     const mapItem = this.maps[_args.id];
     mapItem.element.innerHTML = '';
     mapItem.map.unbindAll();
